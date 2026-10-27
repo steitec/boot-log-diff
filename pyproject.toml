@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "boot-log-diff"
+version = "0.1.0"
+description = "Compare the serial boot log of an embedded board with a golden log, ignoring timestamps, addresses and other boot-to-boot noise"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Ralf Steinert"}]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["embedded", "boot log", "u-boot", "linux", "dmesg", "diff", "test automation", "production test"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Boot",
+    "Topic :: System :: Hardware",
+]
+
+[project.urls]
+Homepage = "https://github.com/steitec/boot-log-diff"
+Repository = "https://github.com/steitec/boot-log-diff"
+Changelog = "https://github.com/steitec/boot-log-diff/blob/main/CHANGELOG.md"
+Issues = "https://github.com/steitec/boot-log-diff/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "build>=1.2"]
+
+[project.scripts]
+boot-log-diff = "boot_log_diff.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]

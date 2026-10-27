@@ -1,0 +1,67 @@
+U-Boot SPL 2023.04-g3a1b2c4 (Oct 02 2026 - 09:14:22 +0000)
+DDRINFO: start DRAM init
+DDRINFO: DRAM rate 3000MTS
+DDRINFO:ddrphy calibration done
+DDRINFO: ddrmix config done
+Normal Boot
+Trying to boot from MMC2
+
+
+U-Boot 2023.04-g3a1b2c4 (Oct 02 2026 - 09:14:22 +0000)
+
+CPU:   i.MX8MM Quad Rev1.0 1800 MHz (running at 1200 MHz)
+CPU:   Industrial temperature grade (-40C to 105C) at 44C
+Reset cause: POR
+Model: Acme EPC-8M Embedded PC
+DRAM:  1 GiB
+Core:  162 devices, 24 uclasses, devicetree: separate
+MMC:   FSL_SDHC: 1, FSL_SDHC: 2
+Loading Environment from MMC... OK
+In:    serial
+Out:   serial
+Err:   serial
+Net:   eth0: ethernet@30be0000
+Hit any key to stop autoboot:  0
+switch to partitions #0, OK
+mmc2(part 0) is current device
+22451712 bytes read in 239 ms (89.6 MiB/s)
+Booting from mmc ...
+45213 bytes read in 4 ms (10.8 MiB/s)
+## Flattened Device Tree blob at 43000000
+   Booting using the fdt blob at 0x43000000
+   Loading Device Tree to 000000007df3f000, end 000000007df4d09c ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd034]
+[    0.000000] Linux version 6.1.55-acme (build@ci) (aarch64-linux-gnu-gcc 12.2.0) #1 SMP PREEMPT Thu Oct  2 09:20:11 UTC 2026
+[    0.000000] Machine model: Acme EPC-8M Embedded PC
+[    0.000000] Memory: 939212K/1048576K available (16128K kernel code, 1208K rwdata, 5632K rodata, 2496K init, 586K bss, 76596K reserved, 32768K cma-reserved)
+[    0.000000] smp: Bringing up secondary CPUs ...
+[    0.010931] smp: Brought up 1 node, 4 CPUs
+[    0.452209] imx8mm-pinctrl 30330000.pinctrl: initialized IMX pinctrl driver
+[    0.981302] imx-sdma 302c0000.dma-controller: firmware found.
+[    1.104109] mmc1: SDHCI controller on 30b50000.mmc [30b50000.mmc] using ADMA
+[    1.104998] mmc2: SDHCI controller on 30b60000.mmc [30b60000.mmc] using ADMA
+[    1.216002] mmc2: new HS400 Enhanced strobe MMC card at address 0001
+[    1.217114] mmcblk2: mmc2:0001 S0J58X 14.6 GiB
+[    1.221877]  mmcblk2: p1 p2
+[    1.310871] fec 30be0000.ethernet eth0: registered PHC device 0
+[    1.313120] fec 30be0000.ethernet eth0: Unable to connect to phy
+[    1.402771] rtc-pcf85063 1-0051: registered as rtc0
+[    1.403902] rtc-pcf85063 1-0051: setting system clock to 2026-10-27T14:02:13 UTC (1793109733)
+[    1.511003] usb 1-1: new high-speed USB device number 2 using ci_hdrc
+[    1.661190] hub 1-1:1.0: 4 ports detected
+[    1.702877] flexcan 308c0000.can: registering netdev can0
+[    1.849662] EXT4-fs (mmcblk2p2): mounted filesystem with ordered data mode. Quota mode: none.
+[    1.850914] VFS: Mounted root (ext4 filesystem) on device 179:2.
+[    1.902711] Freeing unused kernel memory: 2496K
+[    1.950433] Run /sbin/init as init process
+[    2.400871] systemd[1]: Detected architecture arm64.
+[    2.512443] systemd[1]: Hostname set to <epc8m-00b7c2>.
+[    4.611290] mmc1: Timeout waiting for hardware interrupt.
+[    4.612001] mmc1: error -110 whilst initialising SD card
+
+Acme Linux 4.2 epc8m-00b7c2 ttymxc1
+
+epc8m-00b7c2 login:

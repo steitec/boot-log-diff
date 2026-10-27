@@ -1,0 +1,67 @@
+U-Boot SPL 2023.04-g3a1b2c4 (Oct 02 2026 - 09:14:22 +0000)
+DDRINFO: start DRAM init
+DDRINFO: DRAM rate 3000MTS
+DDRINFO:ddrphy calibration done
+DDRINFO: ddrmix config done
+Normal Boot
+Trying to boot from MMC2
+
+
+U-Boot 2023.04-g3a1b2c4 (Oct 02 2026 - 09:14:22 +0000)
+
+CPU:   i.MX8MM Quad Rev1.0 1800 MHz (running at 1200 MHz)
+CPU:   Industrial temperature grade (-40C to 105C) at 38C
+Reset cause: POR
+Model: Acme EPC-8M Embedded PC
+DRAM:  2 GiB
+Core:  162 devices, 24 uclasses, devicetree: separate
+MMC:   FSL_SDHC: 1, FSL_SDHC: 2
+Loading Environment from MMC... OK
+In:    serial
+Out:   serial
+Err:   serial
+Net:   eth0: ethernet@30be0000
+Hit any key to stop autoboot:  0
+switch to partitions #0, OK
+mmc2(part 0) is current device
+22451712 bytes read in 241 ms (88.8 MiB/s)
+Booting from mmc ...
+45213 bytes read in 4 ms (10.8 MiB/s)
+## Flattened Device Tree blob at 43000000
+   Booting using the fdt blob at 0x43000000
+   Loading Device Tree to 00000000bdf3f000, end 00000000bdf4d09c ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd034]
+[    0.000000] Linux version 6.1.55-acme (build@ci) (aarch64-linux-gnu-gcc 12.2.0) #1 SMP PREEMPT Thu Oct  2 09:20:11 UTC 2026
+[    0.000000] Machine model: Acme EPC-8M Embedded PC
+[    0.000000] Memory: 1987532K/2097152K available (16128K kernel code, 1208K rwdata, 5632K rodata, 2496K init, 586K bss, 76436K reserved, 32768K cma-reserved)
+[    0.000000] smp: Bringing up secondary CPUs ...
+[    0.010924] smp: Brought up 1 node, 4 CPUs
+[    0.452113] imx8mm-pinctrl 30330000.pinctrl: initialized IMX pinctrl driver
+[    0.981245] imx-sdma 302c0000.dma-controller: firmware found.
+[    1.102331] mmc2: SDHCI controller on 30b60000.mmc [30b60000.mmc] using ADMA
+[    1.104412] mmc1: SDHCI controller on 30b50000.mmc [30b50000.mmc] using ADMA
+[    1.215870] mmc2: new HS400 Enhanced strobe MMC card at address 0001
+[    1.216902] mmcblk2: mmc2:0001 S0J58X 14.6 GiB
+[    1.221340]  mmcblk2: p1 p2
+[    1.310442] fec 30be0000.ethernet eth0: registered PHC device 0
+[    1.312003] Micrel KSZ9031 Gigabit PHY 30be0000.ethernet-1:07: attached PHY driver
+[    1.402119] rtc-pcf85063 1-0051: registered as rtc0
+[    1.403551] rtc-pcf85063 1-0051: setting system clock to 2026-10-02T09:31:44 UTC (1791106304)
+[    1.511280] usb 1-1: new high-speed USB device number 2 using ci_hdrc
+[    1.660712] hub 1-1:1.0: 4 ports detected
+[    1.702345] flexcan 308c0000.can: registering netdev can0
+[    1.850021] EXT4-fs (mmcblk2p2): mounted filesystem with ordered data mode. Quota mode: none.
+[    1.851337] VFS: Mounted root (ext4 filesystem) on device 179:2.
+[    1.903314] Freeing unused kernel memory: 2496K
+[    1.950812] Run /sbin/init as init process
+[    2.401112] systemd[1]: Detected architecture arm64.
+[    2.512990] systemd[1]: Hostname set to <epc8m-00a1f3>.
+[    3.120345] fec 30be0000.ethernet eth0: Link is Up - 1Gbps/Full - flow control rx/tx
+[    3.611233] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+
+Acme Linux 4.2 epc8m-00a1f3 ttymxc1
+
+epc8m-00a1f3 login:
