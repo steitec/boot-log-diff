@@ -1,5 +1,10 @@
 # boot-log-diff
 
+[![CI](https://github.com/steitec/boot-log-diff/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/steitec/boot-log-diff/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/boot-log-diff)](https://pypi.org/project/boot-log-diff/)
+[![Python](https://img.shields.io/pypi/pyversions/boot-log-diff)](https://pypi.org/project/boot-log-diff/)
+[![License](https://img.shields.io/pypi/l/boot-log-diff)](https://github.com/steitec/boot-log-diff/blob/main/LICENSE)
+
 Compare the serial boot log of an embedded board with the log of a
 known-good board — the "golden log" — and see only what really differs.
 Timestamps, load addresses, transfer rates, dates, MAC and IP addresses are
