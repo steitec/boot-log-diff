@@ -9,14 +9,16 @@ import sys
 
 from . import __version__
 from .compare import BUILTIN_FACTS, Fact, compare
+from .faults import BUILTIN_RULES, load_rules
 from .normalize import BUILTIN_MASK_NAMES, Mask, Normalizer
-from .report import render_json, render_text
+from .report import render_html, render_json, render_junit, render_text
 
 EPILOG = """\
 exit status: 0 no deviations, 1 deviations found, 2 usage or input error
 
 built-in masks: """ + ", ".join(BUILTIN_MASK_NAMES) + """
-built-in facts: """ + ", ".join(fact.name for fact in BUILTIN_FACTS)
+built-in facts: """ + ", ".join(fact.name for fact in BUILTIN_FACTS) + """
+built-in known faults: """ + ", ".join(rule.id for rule in BUILTIN_RULES)
 
 
 class _UsageError(Exception):
@@ -68,7 +70,16 @@ def _parser() -> argparse.ArgumentParser:
         "--strict-order", action="store_true",
         help="report lines that only moved as missing and new",
     )
+    parser.add_argument(
+        "--rules", action="append", default=[], metavar="FILE",
+        help="known faults from a TOML file, checked before the built-in ones (repeatable)",
+    )
+    parser.add_argument(
+        "--no-builtin-rules", action="store_true", help="do not use the built-in known faults",
+    )
     parser.add_argument("--json", action="store_true", help="print the result as JSON")
+    parser.add_argument("--junit", metavar="FILE", help="also write a JUnit XML report to FILE")
+    parser.add_argument("--html", metavar="FILE", help="also write an HTML report to FILE")
     parser.add_argument(
         "--color", choices=["auto", "always", "never"], default="auto",
         help="colour the text output (default: auto)",
@@ -89,6 +100,14 @@ def _read(path: str) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+def _write(path: str, text: str) -> None:
+    try:
+        with open(path, "w", encoding="utf-8", newline="\n") as file:
+            file.write(text)
+    except OSError as exc:
+        raise _UsageError(f"{path}: {exc.strerror}") from None
+
+
 def _use_color(choice: str) -> bool:
     if choice != "auto":
         return choice == "always"
@@ -106,14 +125,30 @@ def main(argv: list[str] | None = None) -> int:
         facts = list(BUILTIN_FACTS) + [
             Fact(name, _regex("--fact", pattern)) for name, pattern in args.fact
         ]
+        rules = []
+        for path in args.rules:
+            try:
+                rules += load_rules(path)
+            except ValueError as exc:
+                raise _UsageError(f"--rules {exc}") from None
+        if not args.no_builtin_rules:
+            rules += BUILTIN_RULES  # own rules first: they win on the same line or id
         golden = _read(args.golden)
         dut = _read(args.dut)
     except _UsageError as exc:
         print(f"boot-log-diff: error: {exc}", file=sys.stderr)
         return 2
 
-    result = compare(golden, dut, normalizer, facts, strict_order=args.strict_order)
+    result = compare(golden, dut, normalizer, facts, strict_order=args.strict_order, rules=rules)
     dut_name = "<stdin>" if args.dut == "-" else args.dut
+    try:
+        if args.junit:
+            _write(args.junit, render_junit(result, args.golden, dut_name))
+        if args.html:
+            _write(args.html, render_html(result, args.golden, dut_name, __version__))
+    except _UsageError as exc:
+        print(f"boot-log-diff: error: {exc}", file=sys.stderr)
+        return 2
     if args.json:
         sys.stdout.write(render_json(result, args.golden, dut_name))
     else:

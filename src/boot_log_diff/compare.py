@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 
+from .faults import BUILTIN_RULES, Fault, Rule, find_faults, unique_rules
 from .normalize import Normalizer, clean
 
 # Words that make a new line worth a second look.
@@ -73,6 +74,10 @@ class Result:
     facts: list[FactDiff]
     hunks: list[Hunk]
     moved: list[tuple[Line, Line]]
+    faults: list[Fault] = field(default_factory=list)
+    # What was checked, for reports that list passed checks too.
+    fact_names: list[str] = field(default_factory=list)
+    rules: list[Rule] = field(default_factory=list)
 
     @property
     def has_deviations(self) -> bool:
@@ -86,6 +91,7 @@ class Result:
             "new_errors": sum(line.error for line in added),
             "moved": len(self.moved),
             "facts_changed": len(self.facts),
+            "faults": len(self.faults),
         }
 
 
@@ -146,12 +152,16 @@ def compare(
     normalizer: Normalizer | None = None,
     facts: Iterable[Fact] = BUILTIN_FACTS,
     strict_order: bool = False,
+    rules: Iterable[Rule] = BUILTIN_RULES,
 ) -> Result:
     """Compare two boot logs given as text.
 
     Lines that only moved are reported in `Result.moved` and do not count as
     a deviation, because drivers probing in parallel do not keep their order.
     With `strict_order` they show up as missing and new lines instead.
+
+    New DUT lines are matched against `rules` (known faults); a line counts
+    for the first rule that matches. Pass `rules=()` to skip that.
     """
     normalizer = normalizer or Normalizer()
     facts = list(facts)
@@ -178,4 +188,6 @@ def compare(
         if tag != "equal"
     ]
     moved = [] if strict_order else _take_moved(hunks)
-    return Result(fact_diffs, hunks, moved)
+    rules = unique_rules(rules)
+    faults = find_faults((line for hunk in hunks for line in hunk.added), rules)
+    return Result(fact_diffs, hunks, moved, faults, [fact.name for fact in facts], rules)

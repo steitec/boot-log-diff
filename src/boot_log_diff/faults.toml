@@ -1,0 +1,222 @@
+# Built-in known faults.
+#
+# Each [[fault]] is matched (re.search, case-insensitive) against the lines
+# that are new in the DUT log compared to the golden log. A line that is also
+# in the golden log is not a fault of this board.
+#
+# Fields: id, title, pattern, diagnosis, severity ("error" or "warning",
+# default "error"). A line counts for the first rule that matches, so more
+# specific rules come first.
+
+[[fault]]
+id = "ddr-training"
+title = "DDR training or calibration failed"
+pattern = '(?:ddr|dram|lpddr\d?)\b.*\b(?:training|calibration|init\w*)\b.*\b(?:fail\w*|error|timeout)|(?:training|calibration) fail\w*'
+diagnosis = """
+The DRAM controller could not train the memory interface. Usual causes:
+cracked or voided solder joints under the DRAM or the SoC (BGA), a DRAM
+supply or VTT/VREF out of tolerance, or a DRAM part that does not match the
+timing set in the SPL. Check the supplies first, then reflow or X-ray."""
+
+[[fault]]
+id = "mmc-timeout"
+title = "eMMC/SD card does not respond (timeout)"
+pattern = 'mmc\d+:.*(?:timeout|timed out|error -110\b)|mmc\d+: error -110 whilst initialising'
+diagnosis = """
+The host controller gets no answer from the card. For an SD slot: card
+missing or not seated, card-detect wired wrong, no card supply. For eMMC:
+VCC/VCCQ missing, a broken CLK/CMD line, or solder joints under the eMMC."""
+
+[[fault]]
+id = "mmc-crc"
+title = "eMMC/SD signal errors (CRC)"
+pattern = 'mmc\d+:.*(?:crc|error -84\b)|mmcblk\d+:.*(?:error -84|crc)'
+diagnosis = """
+Data reach the controller corrupted. Typical for signal integrity problems
+at high speed modes (HS200/HS400): bad termination, a damaged trace, a weak
+I/O supply, or a card at the end of its life. Try a lower bus speed to
+confirm."""
+
+[[fault]]
+id = "mmc-io-error"
+title = "Block device I/O errors"
+pattern = '(?:blk_update_request|I/O error).*(?:mmcblk|sd[a-z]|nvme)|Buffer I/O error on dev'
+diagnosis = """
+Reads or writes on the storage device fail. Worn-out or defective flash,
+or an unstable supply during access. Read the device's health data
+(mmc extcsd read, smartctl) and replace the medium if it is worn out."""
+
+[[fault]]
+id = "eth-phy"
+title = "Ethernet PHY not found"
+pattern = '(?:unable to connect to phy|could not (?:attach to|get) phy|no phy found|phy\b.*not found|mdio.*(?:timeout|read failed))'
+diagnosis = """
+The MAC cannot talk to the PHY over MDIO. Check the PHY supply and its
+reset line, the reference clock (25/50 MHz), the MDIO/MDC solder joints and
+the PHY address strapping."""
+
+[[fault]]
+id = "eth-no-link"
+title = "Ethernet link does not come up"
+pattern = '(?:link is not ready|link (?:is )?down|no link|carrier lost)'
+severity = "warning"
+diagnosis = """
+The PHY is there but sees no link partner. Cable or switch port first,
+then the magnetics/connector, the PHY's analog supply and the
+differential pairs to the connector."""
+
+[[fault]]
+id = "usb-enumeration"
+title = "USB device does not enumerate"
+pattern = 'usb \S+:.*(?:device descriptor read.*error|device not accepting address|unable to enumerate|cannot enable)'
+diagnosis = """
+A device answers electrically but enumeration fails (often error -71 or
+-110). Check VBUS and its current limit, the D+/D- lines (ESD diodes,
+common-mode chokes), and the USB hub's supply and crystal."""
+
+[[fault]]
+id = "usb-overcurrent"
+title = "USB over-current"
+pattern = 'over-?current'
+diagnosis = """
+The port's power switch reports over-current. A short on VBUS, a defective
+power switch or a device that draws too much. Measure VBUS and its current
+with the device unplugged."""
+
+[[fault]]
+id = "i2c-nack"
+title = "I2C device does not answer"
+pattern = 'i2c.*(?:timeout|timed out|arbitration lost|error -(?:6|110|121)\b|no acknowledge|nack)|error -(?:6|121)\b.*i2c|probe of \d+-00[0-9a-f]{2} failed'
+diagnosis = """
+A device on the I2C bus does not acknowledge its address. The device is
+missing or not powered, its address pins are strapped differently, or the
+bus is held low (missing pull-ups, a hung device). Check SDA/SCL with a
+scope."""
+
+[[fault]]
+id = "spi-flash"
+title = "SPI/NOR flash not detected"
+pattern = '(?:unrecognized jedec id|spi-nor.*(?:not found|unrecognized)|sf: probe.*fail|no spi flash found|SF: Unsupported flash)'
+diagnosis = """
+The flash answers with an unknown or empty ID (0x00/0xff). Check the flash
+supply, chip select and clock, the hold/write-protect pins, and whether a
+different flash part was fitted than the device tree expects."""
+
+[[fault]]
+id = "nand"
+title = "NAND/UBI error"
+pattern = '(?:no nand device found|nand.*(?:timeout|ecc.*(?:fail|uncorrectable))|ubi\d*\s*(?:error|warning).*(?:bad|corrupt|ecc)|uncorrectable ecc)'
+diagnosis = """
+The raw NAND does not respond or returns data the ECC cannot correct.
+Worn blocks, a wrong timing setup, or a broken bus line. Check the bad
+block table and the NAND supply."""
+
+[[fault]]
+id = "pcie-link"
+title = "PCIe link does not come up"
+pattern = 'pci\w*.*(?:link (?:never came up|down|training failed)|phy link never came up|failed to (?:get|bring up) link)'
+diagnosis = """
+The root complex does not train a link with the endpoint. Endpoint not
+powered or held in reset (PERST#), missing reference clock, or a problem
+on the TX/RX lanes (AC coupling capacitors, connector)."""
+
+[[fault]]
+id = "rootfs-mount"
+title = "Root file system cannot be mounted"
+pattern = '(?:vfs: unable to mount root fs|vfs: cannot open root device|kernel panic.*unable to mount root)'
+diagnosis = """
+The kernel does not find or cannot read the root partition. The storage
+device was not detected (see the mmc/nand faults above), the partition is
+empty or corrupt, or root= in the kernel command line is wrong."""
+
+[[fault]]
+id = "fs-corruption"
+title = "File system errors"
+pattern = '(?:ext[234]-fs error|ext[234]-fs warning.*(?:corrupt|checksum)|squashfs error|ubifs error|fat-fs.*error|xfs.*corruption)'
+diagnosis = """
+The file system has inconsistent data. After unclean power-offs this is
+software damage; repeated errors on fresh images point to failing storage
+or an unstable supply during writes."""
+
+[[fault]]
+id = "env-default"
+title = "Bootloader environment is invalid"
+pattern = '(?:bad crc, using default environment|\*\*\* warning - bad crc)'
+severity = "warning"
+diagnosis = """
+U-Boot could not read its saved environment and uses the built-in default.
+Normal on a freshly flashed board; on a board in the field it means the
+environment area was erased or overwritten, and custom settings (boot
+order, MAC address) are lost."""
+
+[[fault]]
+id = "bad-image"
+title = "Bootloader rejects the kernel or device tree image"
+pattern = '(?:bad (?:data )?crc|bad magic|bad linux arm(?:64)? (?:zimage|image) magic|wrong image format|bad header checksum|verifying checksum \.\.\. bad|fdt_.*err|could not find a valid device tree)'
+diagnosis = """
+The image read from storage is corrupt or not the expected format. A broken
+download, a wrong load address overlapping another image, or storage that
+returns wrong data. Re-flash and compare checksums."""
+
+[[fault]]
+id = "kernel-panic"
+title = "Kernel panic or oops"
+pattern = '(?:kernel panic|internal error: oops|unable to handle kernel|kernel bug at|\bbug: )'
+diagnosis = """
+The kernel crashed. A software fault is likely when it is reproducible at
+the same place; if it happens at random places, suspect DRAM (run a memory
+test), core voltage or clocks."""
+
+[[fault]]
+id = "watchdog-reset"
+title = "Reset by watchdog"
+pattern = '(?:reset cause:\s*(?:wdog|watchdog)|watchdog.*(?:did not stop|reset the system|bark)|(?:last|previous) reset.*watchdog)'
+diagnosis = """
+The previous boot was ended by the watchdog. The system hung earlier: look
+at the log of that previous boot, not this one."""
+
+[[fault]]
+id = "power"
+title = "Supply or regulator problem"
+pattern = '(?:under-?voltage|brown-?out|regulator.*(?:failed to enable|disable failed|over-?current)|failed to enable.*(?:supply|regulator)|pmic.*(?:fault|error))'
+diagnosis = """
+A supply is out of range or a regulator could not be switched on. Measure
+the rail under load; check the input supply, the regulator's enable and
+feedback network, and for shorts on the rail."""
+
+[[fault]]
+id = "thermal"
+title = "Over-temperature"
+pattern = '(?:critical temperature|thermal.*(?:shutdown|critical|emergency)|overheat\w*|temperature above threshold)'
+diagnosis = """
+The SoC or a sensor reports a critical temperature. Heat sink not mounted
+or without thermal paste, fan defective, or a component drawing too much
+current. Measure the temperature and the supply current."""
+
+[[fault]]
+id = "memory-ecc"
+title = "Memory ECC errors"
+pattern = '(?:\bedac\b.*(?:\b(?:ce|ue)\b|error)|ecc error|machine check|uncorrected error)'
+diagnosis = """
+The memory controller corrected or detected bit errors. Repeated errors at
+the same address point to a defective DRAM chip; scattered errors to supply
+noise, temperature or timing."""
+
+[[fault]]
+id = "firmware-missing"
+title = "Firmware file not found"
+pattern = '(?:direct firmware load for \S+ failed|firmware.*(?:not found|failed to load)|failed to load firmware)'
+severity = "warning"
+diagnosis = """
+A driver could not load its firmware, so its device stays off (Wi-Fi,
+Bluetooth, DSP, video). The firmware file is missing from the root file
+system: a software/image problem, not a hardware fault."""
+
+[[fault]]
+id = "rcu-stall"
+title = "CPU stall"
+pattern = '(?:rcu.*(?:detected stall|self-detected stall)|soft lockup|hard lockup|hung_task|blocked for more than \d+ seconds)'
+diagnosis = """
+A CPU did not respond for seconds. A driver waiting for hardware that never
+answers (a missing or hung device on a bus) or a software deadlock. The
+lines before the stall usually name the device."""

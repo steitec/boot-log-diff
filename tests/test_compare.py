@@ -41,7 +41,7 @@ def test_missing_and_new_lines_with_line_numbers():
     ]
     assert [(line.number, line.error) for line in hunk.added] == [(6, True)]
     assert result.summary() == {
-        "missing": 1, "new": 1, "new_errors": 1, "moved": 0, "facts_changed": 0,
+        "missing": 1, "new": 1, "new_errors": 1, "moved": 0, "facts_changed": 0, "faults": 1,
     }
     assert result.has_deviations
 

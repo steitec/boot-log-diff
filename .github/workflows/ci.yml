@@ -23,5 +23,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          boot-log-diff examples/golden.log examples/faulty.log
-          test $? -eq 1
+          boot-log-diff examples/golden.log examples/faulty.log --junit boot.xml --html boot.html
+          code=$?
+          set -e
+          test $code -eq 1
+          grep -q 'name="eth-phy"' boot.xml
+          grep -q 'Ethernet PHY not found' boot.html
