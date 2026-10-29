@@ -61,6 +61,11 @@ marks 60 lines in them. boot-log-diff reports the four places
 that matter: half the RAM, an Ethernet PHY that is not found, and an SD card
 slot that times out — and says where to look for the last two.
 
+Walkthroughs — capturing logs, building a golden log, writing your own fault
+rules, CI setups — and troubleshooting are in the
+[wiki](https://github.com/steitec/boot-log-diff/wiki); this README is the
+reference.
+
 ## Why
 
 In board repair and production test, the boot log is often the first and
