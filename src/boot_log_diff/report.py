@@ -38,7 +38,7 @@ def render_text(result: Result, golden_name: str, dut_name: str, color: bool = F
         out += ["", "Known faults:"]
         for fault in result.faults:
             label = paint(_BOLD_RED if fault.rule.severity == "error" else _YELLOW, f"[{fault.rule.severity}]")
-            out.append(f"  {label} {fault.rule.title} ({fault.rule.id}), {_dut_lines(fault)}")
+            out.append(f"  {label} {fault.rule.title} ({fault.rule.id}), {_fault_lines(fault)}")
             out += textwrap.wrap(fault.rule.diagnosis, 76, initial_indent="      ", subsequent_indent="      ")
 
     for hunk in result.hunks:
@@ -65,9 +65,9 @@ def render_text(result: Result, golden_name: str, dut_name: str, color: bool = F
     return "\n".join(out) + "\n"
 
 
-def _dut_lines(fault: Fault) -> str:
+def _fault_lines(fault: Fault) -> str:
     numbers = [str(line.number) for line in fault.lines]
-    return ("dut line " if len(numbers) == 1 else "dut lines ") + ", ".join(numbers)
+    return f"{fault.log} line{'' if len(numbers) == 1 else 's'} " + ", ".join(numbers)
 
 
 def _line(line: Line) -> dict[str, object]:
@@ -87,6 +87,7 @@ def render_json(result: Result, golden_name: str, dut_name: str) -> str:
                 "title": fault.rule.title,
                 "severity": fault.rule.severity,
                 "diagnosis": fault.rule.diagnosis,
+                "log": fault.log,
                 "lines": [_line(line) for line in fault.lines],
             }
             for fault in result.faults
@@ -159,7 +160,7 @@ def render_junit(result: Result, golden_name: str, dut_name: str) -> str:
         if fault is None:
             case("faults", rule.id)
         else:
-            lines = "\n".join(f"dut line {line.number}: {line.text}" for line in fault.lines)
+            lines = "\n".join(f"{fault.log} line {line.number}: {line.text}" for line in fault.lines)
             case("faults", rule.id, rule.title, rule.severity, f"{rule.diagnosis}\n\n{lines}")
 
     suite.set("tests", str(len(suite.findall("testcase"))))
@@ -241,7 +242,7 @@ def render_html(result: Result, golden_name: str, dut_name: str, version: str = 
         out.append("<h2>Known faults</h2>")
         for fault in result.faults:
             rule = fault.rule
-            lines = "".join(f"<div>{line.number}: {e(line.text)}</div>" for line in fault.lines)
+            lines = "".join(f"<div>{fault.log} line {line.number}: {e(line.text)}</div>" for line in fault.lines)
             out.append(
                 f'<div class="fault {rule.severity}"><h3>{e(rule.title)} '
                 f'<span class="id">{e(rule.id)} · {rule.severity}</span></h3>'

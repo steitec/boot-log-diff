@@ -6,9 +6,9 @@ import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher, get_close_matches
 
-from .faults import BUILTIN_RULES, Fault, Rule, find_faults, unique_rules
+from .faults import BUILTIN_RULES, Fault, Rule, find_faults, find_missing, find_unreached, unique_rules
 from .normalize import Normalizer, clean
 
 # Words that make a new line worth a second look.
@@ -146,6 +146,18 @@ def _take_moved(hunks: list[Hunk]) -> list[tuple[Line, Line]]:
     return moved
 
 
+def _unreached(tail: Hunk | None) -> list[Line]:
+    """The golden lines at the end of the log that the DUT never printed.
+
+    Empty if the DUT log merely has another last line, such as a host name
+    that differs from the golden board's.
+    """
+    if tail is None:
+        return []
+    added = [line.normalized for line in tail.added]
+    return [line for line in tail.removed if not get_close_matches(line.normalized, added, n=1, cutoff=0.6)]
+
+
 def compare(
     golden: str,
     dut: str,
@@ -161,7 +173,11 @@ def compare(
     With `strict_order` they show up as missing and new lines instead.
 
     New DUT lines are matched against `rules` (known faults); a line counts
-    for the first rule that matches. Pass `rules=()` to skip that.
+    for the first rule that matches. Golden lines gone from the DUT log are
+    matched against the rules with `match = "missing"`. If the DUT log stopped
+    early, the lines it never got to go to the `match = "unreached"` rules
+    instead: they say nothing about the drivers that print them.
+    Pass `rules=()` to skip all of that.
     """
     normalizer = normalizer or Normalizer()
     facts = list(facts)
@@ -187,7 +203,14 @@ def compare(
         for tag, i1, i2, j1, j2 in matcher.get_opcodes()
         if tag != "equal"
     ]
+    # A last hunk that reaches the end of the golden log: the DUT may have stopped there.
+    tail = hunks[-1] if hunks and hunks[-1].removed and matcher.get_opcodes()[-1][0] != "equal" else None
     moved = [] if strict_order else _take_moved(hunks)
     rules = unique_rules(rules)
     faults = find_faults((line for hunk in hunks for line in hunk.added), rules)
+    unreached = _unreached(tail)
+    skip = {id(line) for line in tail.removed} if unreached else set()
+    removed = (line for hunk in hunks for line in hunk.removed if id(line) not in skip)
+    faults += find_missing(removed, golden_lines, dut_lines, rules, (fault.rule.id for fault in faults))
+    faults += find_unreached(unreached, rules)
     return Result(fact_diffs, hunks, moved, faults, [fact.name for fact in facts], rules)
