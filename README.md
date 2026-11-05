@@ -86,7 +86,7 @@ every kernel timestamp differs. boot-log-diff:
   board model, U-Boot and kernel version, plus your own
 - **flags error-looking lines** — new lines with *error*, *fail*, *timeout*,
   *unable*, *not found* and the like are marked with `!`
-- **diagnoses known faults** — 23 built-in patterns for DRAM, eMMC/SD, NAND,
+- **diagnoses known faults** — 35 built-in patterns for DRAM, eMMC/SD, NAND,
   SPI flash, Ethernet PHY, USB, I2C, PCIe, supplies, temperature, file system
   and kernel crashes, each with what to check on the board; add your own
 - **fits into CI and test scripts** — exit status 0/1/2, JSON, JUnit XML and
@@ -168,6 +168,15 @@ memory ECC errors, missing firmware and CPU stalls. `boot-log-diff --help`
 lists their ids; the definitions are in
 [`faults.toml`](src/boot_log_diff/faults.toml).
 
+Some faults print nothing at all: a driver that no longer loads just leaves a
+gap. So there are also faults for lines that are *gone* (`match = "missing"`):
+eMMC/SD card, SATA, NVMe, Ethernet driver and link, USB device, PCIe link, RTC,
+SPI flash and CAN. They fire only if the DUT log has fewer matching lines than
+the golden log, so a link at a lower speed is not a missing link. If a more
+specific fault was found (`unless`), the missing line does not get a second
+diagnosis. And if the log stops early, the lines it never got to are reported
+once as `boot-incomplete` (`match = "unreached"`), not as one fault per driver.
+
 Add what you know about your own boards in a TOML file:
 
 ```toml
@@ -185,6 +194,14 @@ title = "Ethernet PHY not found"
 pattern = 'unable to connect to phy'
 diagnosis = "On rev C boards: R212 (PHY reset pull-up) is often cracked."
 severity = "warning"
+
+[[fault]]
+id = "fpga-driver-missing"
+title = "FPGA driver no longer loads"
+match = "missing"        # a golden line that is gone from the DUT log
+pattern = 'fpga_manager fpga\d+: .* registered'
+unless = ["fpga-config"]  # that fault already explains it
+diagnosis = "Compare the device tree and check that the FPGA module is in the image."
 ```
 
 ```console
@@ -247,8 +264,8 @@ from `load_rules(path)` or `parse_rules(text)`; pass them as
 - The error flag and the known faults are pattern matches, not an
   understanding of the message. A diagnosis says where to look first; it
   is not a verdict.
-- Known faults only look at new lines. A fault that shows as a *missing*
-  line (a driver that no longer probes) is in the diff, without a diagnosis.
+- A missing-line fault needs a rule that knows the line. Other missing lines
+  are in the diff, without a diagnosis.
 - One golden log per comparison. If healthy boards differ among themselves
   (other eMMC vendor, optional module), mask or ignore that line.
 

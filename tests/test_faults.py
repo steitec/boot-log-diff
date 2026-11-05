@@ -30,6 +30,8 @@ def ids(text):
         ("mmc-timeout", "[    4.612001] mmc1: error -110 whilst initialising SD card"),
         ("mmc-crc", "[    2.100000] mmc2: Got data interrupt 0x00200000 even though no data operation was in progress. CRC error"),
         ("mmc-io-error", "[    9.100000] blk_update_request: I/O error, dev mmcblk2, sector 34816"),
+        ("sata-link", "[    1.204511] ata1: COMRESET failed (errno=-16)"),
+        ("sata-link", "[   11.418871] ata1: limiting SATA link speed to 3.0 Gbps"),
         ("eth-phy", "[    1.313120] fec 30be0000.ethernet eth0: Unable to connect to phy"),
         ("eth-phy", "Could not get PHY for ethernet@30be0000: addr 7"),
         ("eth-no-link", "[   12.000000] fec 30be0000.ethernet eth0: Link is Down"),

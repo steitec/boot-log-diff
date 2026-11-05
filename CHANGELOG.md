@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 — 2026-11-05
+
+### Added
+
+- **Faults from missing lines**: 10 new built-in faults fire when a line that
+  good boards print is gone: eMMC/SD card, SATA, NVMe, Ethernet driver and
+  link, USB device, PCIe link, RTC, SPI flash, CAN. A line that only changed a
+  value does not count: the DUT log must have fewer matching lines than the
+  golden log.
+- `boot-incomplete`: the DUT log stops before the end of the golden log. The
+  lines it never got to are reported once, not as one fault per driver.
+- `sata-link`: COMRESET failures, link down, reduced link speed.
+- Rule files: `match = "missing"` or `"unreached"` (default `"new"`), and
+  `unless = [ids]` to silence a `missing` rule that another fault explains.
+- Python API: `Rule.match`, `Rule.unless`, `Fault.log`.
+- JSON output: faults have `log` (`dut` or `golden`), the log their line
+  numbers refer to.
+
+### Changed
+
+- Reports name the log of a fault's lines (`golden line 11`, `dut line 62`).
+
 ## 0.2.0 — 2026-10-29
 
 ### Added

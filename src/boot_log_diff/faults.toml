@@ -5,8 +5,15 @@
 # in the golden log is not a fault of this board.
 #
 # Fields: id, title, pattern, diagnosis, severity ("error" or "warning",
-# default "error"). A line counts for the first rule that matches, so more
-# specific rules come first.
+# default "error"), match, unless. A line counts for the first rule that
+# matches, so more specific rules come first.
+#
+# match = "new" (default) looks at new DUT lines. match = "missing" looks at
+# golden lines gone from the DUT log and fires only if the DUT log has fewer
+# lines matching the pattern than the golden log. unless = [ids] silences a
+# "missing" rule when one of these faults was found: it is the better
+# explanation. match = "unreached" looks at golden lines the DUT log never got
+# to because it stopped early; "missing" rules do not see those lines.
 
 [[fault]]
 id = "ddr-training"
@@ -220,3 +227,139 @@ diagnosis = """
 A CPU did not respond for seconds. A driver waiting for hardware that never
 answers (a missing or hung device on a bus) or a software deadlock. The
 lines before the stall usually name the device."""
+
+[[fault]]
+id = "sata-link"
+title = "SATA link problems"
+pattern = 'ata\d+(?:\.\d+)?: (?:COMRESET failed|softreset failed|SATA link down|limiting SATA link speed|failed command)'
+diagnosis = """
+The SATA host and the drive do not get or keep a stable link. Check the drive
+and its seating first (M.2 latch, cable), then the drive supply. A link that
+falls back to a lower speed usually means a marginal signal path, a bad
+cable or a failing drive. Swap the drive to tell board and drive apart."""
+
+# Lines that healthy boards print and this one does not.
+
+[[fault]]
+id = "mmc-card-missing"
+title = "eMMC/SD card no longer detected"
+match = "missing"
+pattern = 'mmc\d+: new .*card at address'
+unless = ["mmc-timeout", "mmc-crc"]
+diagnosis = """
+The controller came up but never found the card, and did not report an error
+either. For an SD slot: no card, or a broken card-detect. For eMMC: check
+VCC/VCCQ, the CLK/CMD lines and the solder joints under the eMMC."""
+
+[[fault]]
+id = "sata-link-missing"
+title = "SATA drive no longer detected"
+match = "missing"
+pattern = 'ata\d+(?:\.\d+)?: SATA link up'
+unless = ["sata-link"]
+diagnosis = """
+No SATA link came up on this port. Drive missing or not seated, no drive
+supply, or a damaged connector. If the whole ata lines are gone, the driver
+did not load: then compare the kernel configuration and the BIOS SATA mode."""
+
+[[fault]]
+id = "nvme-missing"
+title = "NVMe drive no longer detected"
+match = "missing"
+pattern = 'nvme nvme\d+: (?:\d+/\d+/\d+ default/read/poll queues|pci function)'
+unless = ["pcie-link"]
+diagnosis = """
+The NVMe drive did not show up. Check that it is seated in the M.2 slot, its
+3.3 V supply and PERST#. If other PCIe devices are gone too, look at the PCIe
+reference clock and the root port."""
+
+[[fault]]
+id = "eth-driver-missing"
+title = "Ethernet driver or PHY no longer reports"
+match = "missing"
+pattern = 'attached PHY driver|eth\d+: registered PHC'
+unless = ["eth-phy"]
+diagnosis = """
+The Ethernet interface did not come up the way it does on a good board, and
+no error says why. On a board with the same image this points to the MAC or
+PHY not being detected: check the PHY supply, reset and reference clock. A
+different image or device tree can cause it too, so compare the kernel fact."""
+
+[[fault]]
+id = "eth-link-missing"
+title = "Ethernet link no longer comes up"
+match = "missing"
+severity = "warning"
+pattern = '\b(?:eth|en[a-z]*)\d\S*:? (?:NIC )?link is up'
+unless = ["eth-phy", "eth-no-link", "eth-driver-missing"]
+diagnosis = """
+No link was reported before the log ended. Check the cable and the test
+fixture first. If those are good: magnetics, the connector, and the PHY
+supply. The link can also simply come up later than the capture stopped."""
+
+[[fault]]
+id = "usb-device-missing"
+title = "USB device no longer detected"
+match = "missing"
+pattern = 'usb \d+-[\d.]+: new .*USB device number'
+unless = ["usb-enumeration", "usb-overcurrent"]
+diagnosis = """
+Fewer USB devices enumerated than on a good board, without an error. Nothing
+was seen on the port: check VBUS on the port, the connector, D+/D- and the
+device itself. For an on-board hub, check its supply and reset."""
+
+[[fault]]
+id = "pcie-link-missing"
+title = "PCIe link no longer reported"
+match = "missing"
+pattern = 'pcie.*\blink up\b'
+unless = ["pcie-link"]
+diagnosis = """
+The PCIe link was not reported as up. Check the card or M.2 module and its
+seating, the reference clock, the endpoint supply and PERST#."""
+
+[[fault]]
+id = "rtc-missing"
+title = "RTC no longer detected"
+match = "missing"
+pattern = '\brtc\S*\s.*registered as rtc\d'
+unless = ["i2c-nack"]
+diagnosis = """
+The real-time clock did not register. Check its supply and backup battery, the
+crystal and the I2C or SPI lines to the chip. Without it the board starts with
+a wrong date, which can break certificates and log timestamps."""
+
+[[fault]]
+id = "spi-flash-missing"
+title = "SPI flash no longer detected"
+match = "missing"
+pattern = 'spi-nor spi\d+\.\d+: .*\(\d+ kbytes\)'
+unless = ["spi-flash"]
+diagnosis = """
+The SPI NOR flash was not detected, and no error says why. Check the flash
+supply, chip select and clock, and the solder joints of the chip."""
+
+[[fault]]
+id = "can-missing"
+title = "CAN interface no longer detected"
+match = "missing"
+pattern = 'registering netdev can\d|\bcan\d.*successfully initialized'
+unless = ["i2c-nack"]
+diagnosis = """
+The CAN interface did not register. For an external controller on SPI: check
+its supply, oscillator, chip select and interrupt line. For a controller
+inside the SoC: compare the device tree of this image with the golden one."""
+
+# The log itself.
+
+[[fault]]
+id = "boot-incomplete"
+title = "Boot log stops early"
+match = "unreached"
+pattern = '\S'
+diagnosis = """
+The log ends before the point a good board reaches; the line shown is the
+first one this board did not print. Look at the last lines of the DUT log:
+that is where it hung, reset or lost power. Lines after this point are not
+reported one by one, because they say nothing about their drivers. Also make
+sure the capture did not simply stop too early."""
